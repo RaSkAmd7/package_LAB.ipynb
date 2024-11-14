@@ -1,0 +1,92 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Simulation parameters
+TSim = 250        # Total simulation time
+T_s = 0.1         # Sampling time
+N = int(TSim / T_s)  # Number of samples
+
+# PID parameters
+K_C = 10
+T_I = 3
+T_D = 0.5
+T_FD = 0.1
+
+# Define SP (Setpoint) as seen in the screenshot
+SP = np.zeros(N)
+SP[:int(50 / T_s)] = 50      # SP = 50 from 0 to 50s
+SP[int(50 / T_s):] = 60      # SP = 60 from 50s onwards
+
+# Define initial PV (Process Variable) to start at 50 and change over time
+PV = np.ones(N) * 50         # Start with PV = 50
+
+# Manual (MAN) mode as per your example
+MAN = np.zeros(N)
+MAN[int(100 / T_s):int(120 / T_s)] = 1  # Manual mode enabled from 100s to 120s
+
+# Initialize lists for PID components
+MV = [0]                      # Manipulated Variable
+MVP = [0]                     # Proportional Component
+MVI = [0]                     # Integral Component
+MVD = [0]                     # Derivative Component
+MVFF = [0]                    # Feed-Forward Component
+E = [SP[0] - PV[0]]           # Error term initialized with the first SP and PV
+
+# PID control function and process simulation
+for i in range(1, N):
+    # Calculate error
+    E.append(SP[i] - PV[i-1])
+    
+    # Proportional term
+    MVP.append(K_C * E[-1])
+    
+    # Integral term
+    MVI.append(MVI[-1] + (K_C * T_s / T_I) * E[-1])
+    
+    # Derivative term
+    MVD.append((T_FD / (T_FD + T_s)) * MVD[-1] + (K_C * T_D / (T_FD + T_s)) * (E[-1] - E[-2]))
+
+    # Feed-forward term (assuming zero here; adjust as needed)
+    MVFF.append(0)
+    
+    # Total output
+    MV.append(MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1])
+    
+    PV = np.zeros(N)
+    PV[:int(250 / T_s)] = 50      # SP = 50 from 0 to 50s
+       
+
+# Time array for plotting
+t = np.linspace(0, TSim, N)
+
+# Plotting
+plt.figure(figsize=(15, 12))
+
+# Plot MV and its components
+plt.subplot(3, 1, 1)
+plt.plot(t, MV, 'b-', label='MV')
+plt.plot(t, MVP, 'g-', label='MVP')
+plt.plot(t, MVI, 'c-', label='MVI')
+plt.plot(t, MVD, 'r-', label='MVD')
+plt.plot(t, MVFF, 'm-', label='MVFF')
+plt.ylabel('Value of MV, MVP, MVI, MVD & MVFF [%]')
+plt.legend(loc='upper left')
+plt.title('Step response of the PID controller')
+
+# Plot SP, PV, and Error
+plt.subplot(3, 1, 2)
+plt.plot(t, SP, 'r-', label='SP')
+plt.plot(t, PV, 'g-', label='PV')
+plt.plot(t, E, 'k-', label='E')
+plt.ylabel('Value of SP, PV & E [°C]')
+plt.legend(loc='upper left')
+
+# Plot Manual (MAN) mode
+plt.subplot(3, 1, 3)
+plt.plot(t, MAN, 'r-', label='Man')
+plt.ylabel('Value of Man')
+plt.xlabel('Time [s]')
+plt.legend(loc='upper left')
+
+plt.tight_layout()
+plt.show()
