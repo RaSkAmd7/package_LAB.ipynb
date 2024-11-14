@@ -8,14 +8,14 @@ N = int(TSim / T_s)  # Number of samples
 
 # PID parameters
 K_C = 1
-T_I = 0.1
-T_D = 0.5
-T_FD = 0.25
+T_I = 9
+T_D = 4
+T_FD = 2
 
 # Define SP (Setpoint) as seen in the screenshot
 SP = np.zeros(N)
-SP[:int(50 / T_s)] = 50      # SP = 50 from 0 to 50s
-SP[int(50 / T_s):] = 60      # SP = 60 from 50s onwards
+SP[:int(5 / T_s)] = 50      # SP = 50 from 0 to 50s
+SP[int(5 / T_s):] = 60      # SP = 60 from 50s onwards
 
 # Define initial PV (Process Variable) to start at 50 and change over time
 PV = np.ones(N) * 50         # Start with PV = 50
@@ -31,27 +31,51 @@ MVI = [0]                     # Integral Component
 MVD = [0]                     # Derivative Component
 MVFF = [0]                    # Feed-Forward Component
 E = [SP[0] - PV[0]]           # Error term initialized with the first SP and PV
+MVmax = 100
+MVmin = 0
+MANvalbase = 50
+AUvalbase = 100
+
 
 # PID control function and process simulation
 for i in range(1, N):
+    MVmax = MANvalbase
     # Calculate error
+    
     E.append(SP[i] - PV[i-1])
     
     # Proportional term
+    
     MVP.append(K_C * E[-1])
     
     # Integral term
-    MVI.append(MVI[-1] + (K_C * T_s / T_I) * E[-1])
-    
+    if(MAN[i] == 1):
+        MVI.append(MANvalbase - MVP[-1])
+        MVmax = MANvalbase
+    #if(MVFF[i] != 0):
+        
+    else:
+        MVI.append(MVI[-1] + (K_C * T_s / T_I) * E[-1])
+        MVmax = AUvalbase
+      
     # Derivative term
     MVD.append((T_FD / (T_FD + T_s)) * MVD[-1] + (K_C * T_D / (T_FD + T_s)) * (E[-1] - E[-2]))
 
     # Feed-forward term (assuming zero here; adjust as needed)
-    MVFF.append(0)
+    MVFF = np.zeros(N)
+    #MVFF[:int(200 / T_s)] = 0      # SP = 50 from 0 to 50s
+    #MVFF[int(200 / T_s):] = 15      # SP = 60 from 50s onwards
     
     # Total output
-    MV.append(MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1])
     
+    MV.append(MVP[-1] + MVI[-1] + MVD[-1] + MVFF[-1])
+      
+    #saturation
+    if((MVP[-1] + MVI[-1]) > MVmax):
+        MVI[-1] = MVmax - MVP[-1]
+        
+    if((MVP[-1] + MVI[-1]) < MVmin):
+        MVI[-1] = MVmin - MVP[-1]   
     PV = np.zeros(N)
     PV[:int(250 / T_s)] = 50      # SP = 50 from 0 to 50s
        
@@ -90,4 +114,3 @@ plt.legend(loc='upper left')
 
 plt.tight_layout()
 plt.show()
-
