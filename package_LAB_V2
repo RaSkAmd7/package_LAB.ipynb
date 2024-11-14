@@ -7,10 +7,10 @@ T_s = 0.1         # Sampling time
 N = int(TSim / T_s)  # Number of samples
 
 # PID parameters
-K_C = 10
-T_I = 3
+K_C = 1
+T_I = 0.1
 T_D = 0.5
-T_FD = 0.1
+T_FD = 0.25
 
 # Define SP (Setpoint) as seen in the screenshot
 SP = np.zeros(N)
@@ -90,3 +90,4 @@ plt.legend(loc='upper left')
 
 plt.tight_layout()
 plt.show()
+
